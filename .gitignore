@@ -1,0 +1,47 @@
+# ---- heavy outputs & checkpoints ----
+runs/
+*.ckpt
+*.pt
+
+# ---- raw GISAID data (large) ----
+data/gisaid/
+
+# ---- dominance training data (large, not needed for ESM-2 HI training) ----
+# (lives under data/gisaid/ha_processed, already excluded above)
+
+# ---- antigenicity: keep the HI fold CSVs, drop any large fastas ----
+data/antigenicity/**/*.fasta
+data/antigenicity/*.fasta
+data/antigenicity/raw/
+
+# ---- python / env ----
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+*.egg-info/
+.DS_Store
+
+# ---- logs & bundles ----
+nohup.*.log
+*.log
+log.*.txt
+*.tar.gz
+
+# ---- keep small model args pickle (force-include) ----
+!models/*.pkl
+
+# ---- mmseqs temp databases & installers ----
+evaluation/tmp/
+**/tmp/
+*.sh.installer
+Anaconda3-*.sh
+Miniconda3-*.sh
+Anaconda*-Linux-*.sh
+
+# ---- mmseqs alignment files (not needed for ESM-2 training) ----
+*.m8
+
+# ---- mmseqs binary db artifacts ----
+*.dbtype
+*.lookup
