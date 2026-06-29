@@ -207,3 +207,13 @@ class PairwiseRegressionESM2DataModule(PairwiseRegressionAlnDataModule):
             batch_converter=None,
             properties_dict=properties_dict,
         )
+
+    def build_predict_datasets(self, properties, properties_dict, *args, **argv):
+        # the parent's version forgets to assign self.pred_datasets; fix it here.
+        pred_data = self.read_csv(self.args.predict_index_path)
+        pred_dataset = PairwiseAlnClassificationDataset(
+            pred_data, self.vocab, category=self.args.category,
+            prepend_special_token_for_seq1=self.args.prepend_special_token_for_virus,
+            prepend_special_token_for_seq2=self.args.prepend_special_token_for_vaccine,
+            numerical_interval=self.args.numerical_interval, numerical=self.args.numerical)
+        self.pred_datasets = [pred_dataset]

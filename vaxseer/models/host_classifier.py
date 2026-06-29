@@ -859,26 +859,30 @@ class ESM2Regressor(LightningModule):
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         logits = self.forward(batch, None, mode="test")
-        out = []
         keys = list(logits.keys())
         n = logits[keys[0]].shape[0]
+        out = []
         for i in range(n):
-            item = {"index": batch["index"][i].item() if torch.is_tensor(batch["index"]) else batch["index"][i]}
+            item = {}
             for key in keys:
-                item["pred_" + key] = logits[key][i].item()
+                item[key] = logits[key][i].item()
             out.append(item)
         return out
-
-    def output_predicting_results(self, predictions, predict_dataset, output_path):
-        flat = [ele for batch in predictions for ele in batch]
-        results = []
-        for p in flat:
-            idx = p["index"]
-            item = dict(predict_dataset[idx])
-            item.update(p)
-            results.append(item)
-        return results
-
+    def output_predicting_results(self, outputs, predict_dataset, output_path):
+        from collections import defaultdict
+        import pandas as pd
+        results_cols = defaultdict(list)
+        for output in outputs:
+            for key in output:
+                results_cols[key].append(output[key])
+        ori_df = pd.read_csv(self.config.predict_index_path)
+        for drop_col in ("virus_seq", "reference_seq"):
+            if drop_col in ori_df.columns:
+                ori_df = ori_df.drop([drop_col], axis=1)
+        for key in results_cols:
+            ori_df[key] = results_cols[key]
+        ori_df.to_csv(output_path, index=False)
+        return None
     def output_testing_results(self, outputs, test_datasets):
         assert len(test_datasets) == 1
         test_dataset = test_datasets[0]

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VALID_ARGS=$(getopt -o c:t:d:h:p:a:b:e:f:g: --long candidate_vaccine_path:,testing_viruses_path:,working_directory:,hi_predictor_ckpt:,domiance_predictor_ckpt:,devices:,min_testing_time:,max_testing_time:,model_type: -- "$@")
+VALID_ARGS=$(getopt -o c:t:d:h:p:a:b:e:f:g:i: --long candidate_vaccine_path:,testing_viruses_path:,working_directory:,hi_predictor_ckpt:,domiance_predictor_ckpt:,devices:,min_testing_time:,max_testing_time:,model_type:,antigenicity_model: -- "$@")
 
 if [[ $? -ne 0 ]]; then
     exit 1;
@@ -8,6 +8,7 @@ fi
 
 eval set -- "$VALID_ARGS"
 model_type="gpt2_time_new"
+antigenicity_model="esm_regressor"
 while [ : ]; do
   case "$1" in
     -c | --candidate_vaccine_path)
@@ -55,6 +56,11 @@ while [ : ]; do
         echo "model_type: $model_type"
         shift 2
         ;;
+    -i | --antigenicity_model)
+        antigenicity_model=$2
+        echo "antigenicity_model: $antigenicity_model"
+        shift 2
+        ;;
     --) shift; 
         break 
         ;;
@@ -88,7 +94,11 @@ hi_pred_path=$classifier_root_dir"/predictions.csv"
 
 if [ ! -f $hi_pred_path ];
 then
-    python -m bin.train --default_root_dir $classifier_root_dir --data_module hi_regression_aln --model esm_regressor --accelerator gpu --devices $devices --batch_size 64 --learning_rate 3e-4 --num_workers 36 --precision 16 --max_epochs 100 --predict --resume_from_checkpoint $hi_predictor_ckpt --predict_index_path $pairs_save_path --category false
+    if [ "$antigenicity_model" = "esm2_regressor" ]; then
+        python -m bin.train --default_root_dir $classifier_root_dir --data_module hi_regression_esm2 --model esm2_regressor --esm2_model esm2_t30_150M_UR50D --freeze_esm2 true --vocab gpt2 --accelerator gpu --devices $devices --batch_size 16 --num_workers 8 --precision bf16 --predict --resume_from_checkpoint $hi_predictor_ckpt --predict_index_path $pairs_save_path --category false
+    else
+        python -m bin.train --default_root_dir $classifier_root_dir --data_module hi_regression_aln --model esm_regressor --accelerator gpu --devices $devices --batch_size 64 --learning_rate 3e-4 --num_workers 36 --precision 16 --max_epochs 100 --predict --resume_from_checkpoint $hi_predictor_ckpt --predict_index_path $pairs_save_path --category false
+    fi
 fi
 
 # 3. Predict the domiance for viruses
